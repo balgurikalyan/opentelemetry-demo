@@ -1,3 +1,16 @@
+# Copyright 2024 CloudComputingFinalProject
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing,
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
 name: OpenTelemetry CI/CD Pipeline
 
 on:
@@ -10,53 +23,53 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-    - name: Checkout Repository
-      uses: actions/checkout@v3
+      - name: Checkout Repository
+        uses: actions/checkout@v3
 
-    - name: Configure AWS Credentials
-      uses: aws-actions/configure-aws-credentials@v2
-      with:
-        aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
-        aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-        aws-region: ${{ secrets.AWS_REGION }}
+      - name: Configure AWS Credentials
+        uses: aws-actions/configure-aws-credentials@v2
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ secrets.AWS_REGION }}
 
-    - name: DockerHub Login
-      run: echo "${{ secrets.DOCKER_PASSWORD }}" | docker login -u "${{ secrets.DOCKER_USERNAME }}" --password-stdin
+      - name: DockerHub Login
+        run: echo "${{ secrets.DOCKER_PASSWORD }}" | docker login -u "${{ secrets.DOCKER_USERNAME }}" --password-stdin
 
-    - name: Build Docker Image
-      run: |
-        docker build -t ${{ secrets.DOCKER_USERNAME }}/otel-demo:latest .
-        docker push ${{ secrets.DOCKER_USERNAME }}/otel-demo:latest
+      - name: Build Docker Image
+        run: |
+          docker build -t ${{ secrets.DOCKER_USERNAME }}/otel-demo:latest ./src/frontend
+          docker push ${{ secrets.DOCKER_USERNAME }}/otel-demo:latest
 
-    - name: Run Automated Tests (Example)
-      run: |
-        echo "Running Basic Health Test..."
-        docker run --rm ${{ secrets.DOCKER_USERNAME }}/otel-demo:latest /bin/sh -c "echo Health Check Passed"
+      - name: Run Automated Tests (Example)
+        run: |
+          echo "Running Basic Health Test..."
+          docker run --rm ${{ secrets.DOCKER_USERNAME }}/otel-demo:latest /bin/sh -c "echo Health Check Passed"
 
-    - name: Setup kubectl
-      uses: azure/setup-kubectl@v3
-      with:
-        version: 'latest'
+      - name: Setup kubectl
+        uses: azure/setup-kubectl@v3
+        with:
+          version: 'latest'
 
-    - name: Update Kubeconfig for EKS
-      run: aws eks update-kubeconfig --region ${{ secrets.AWS_REGION }} --name otel-demo-cluster
+      - name: Update Kubeconfig for EKS
+        run: aws eks update-kubeconfig --region ${{ secrets.AWS_REGION }} --name otel-demo-cluster
 
-    - name: Add Helm Repo and Update
-      run: |
-        helm repo add open-telemetry https://open-telemetry.github.io/opentelemetry-helm-charts
-        helm repo update
+      - name: Add Helm Repo and Update
+        run: |
+          helm repo add open-telemetry https://open-telemetry.github.io/opentelemetry-helm-charts
+          helm repo update
 
-    - name: Deploy Using Helm with Rollback on Failure
-      run: |
-        set +e
-        helm upgrade --install otel-demo open-telemetry/opentelemetry-demo \
-          --namespace otel-helm --create-namespace \
-          --set image.repository=${{ secrets.DOCKER_USERNAME }}/otel-demo \
-          --set image.tag=latest
-        status=$?
-        if [ $status -ne 0 ]; then
-          echo "Helm upgrade failed. Rolling back..."
-          helm rollback otel-demo -n otel-helm
-          exit 1
-        fi
-        set -e
+      - name: Deploy Using Helm with Rollback on Failure
+        run: |
+          set +e
+          helm upgrade --install otel-demo open-telemetry/opentelemetry-demo \
+            --namespace otel-helm --create-namespace \
+            --set image.repository=${{ secrets.DOCKER_USERNAME }}/otel-demo \
+            --set image.tag=latest
+          status=$?
+          if [ $status -ne 0 ]; then
+            echo "Helm upgrade failed. Rolling back..."
+            helm rollback otel-demo -n otel-helm
+            exit 1
+          fi
+          set -e
