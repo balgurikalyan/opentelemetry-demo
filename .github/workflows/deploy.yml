@@ -34,7 +34,7 @@ jobs:
       - name: Run Automated Tests (Example)
         run: |
           echo "Running Basic Health Test..."
-          docker run --rm ${{ secrets.DOCKER_USERNAME }}/otel-demo:latest /bin/sh -c "echo Health Check Passed"
+          docker run --rm --entrypoint ${{ secrets.DOCKER_USERNAME }}/otel-demo:latest /bin/sh -c "echo Health Check Passed"
 
       - name: Setup kubectl
         uses: azure/setup-kubectl@v3
