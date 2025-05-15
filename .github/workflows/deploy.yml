@@ -5,8 +5,9 @@ name: End-End Code Deployment pipeline
 
 on:
   push:
-    branches:
-      - main  # Adjust to the branch you want to trigger the workflow
+    paths:
+      - 'src/**'
+      - 'test/**'
 
 jobs:
   build_images:
