@@ -50,12 +50,12 @@ jobs:
           helm repo update
 
       - name: Deploy Using Helm with Rollback on Failure
-        run: |
-          set +e
-          helm upgrade --install otel-demo open-telemetry/opentelemetry-demo \
-            --namespace otel-helm --create-namespace \
+  	run: |
+    	  set +e
+    	  helm upgrade --install otel-demo open-telemetry/opentelemetry-demo \
+      	    --namespace otel-helm --create-namespace \
             --set default.image.repository=${{ secrets.DOCKER_USERNAME }}/otel-demo \
-  	    --set default.image.tag=latest
+            --set default.image.tag=latest
           status=$?
           if [ $status -ne 0 ]; then
             echo "Helm upgrade failed. Rolling back..."
