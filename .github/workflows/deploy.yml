@@ -6,7 +6,7 @@ name: End-End Code Deployment pipeline
 on:
   push:
     branches:
-      - dev  # Adjust to the branch you want to trigger the workflow
+      - main  # Adjust to the branch you want to trigger the workflow
 
 jobs:
   build_images:
@@ -14,7 +14,7 @@ jobs:
     secrets: inherit
     with:
       push: true
-      version: 'dev'
+      version: 'main'
   integration_checks:
     uses: ./.github/workflows/checks.yml
     needs: build_images
