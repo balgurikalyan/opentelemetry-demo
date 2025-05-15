@@ -34,7 +34,7 @@ jobs:
       - name: Run Automated Tests (Example)
         run: |
           echo "Running Basic Health Test..."
-          docker run --rm --entrypoint /bin/sh ${{ secrets.DOCKER_USERNAME }}/otel-demo:latest  -c "echo Health Check Passed"
+          docker run --rm --entrypoint /bin/sh ${{ secrets.DOCKER_USERNAME }}/otel-demo:latest -c "echo Health Check Passed"
 
       - name: Setup kubectl
         uses: azure/setup-kubectl@v3
@@ -50,10 +50,10 @@ jobs:
           helm repo update
 
       - name: Deploy Using Helm with Rollback on Failure
-  	run: |
-    	  set +e
-    	  helm upgrade --install otel-demo open-telemetry/opentelemetry-demo \
-      	    --namespace otel-helm --create-namespace \
+        run: |
+          set +e
+          helm upgrade --install otel-demo open-telemetry/opentelemetry-demo \
+            --namespace otel-helm --create-namespace \
             --set default.image.repository=${{ secrets.DOCKER_USERNAME }}/otel-demo \
             --set default.image.tag=latest
           status=$?
