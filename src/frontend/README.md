@@ -25,5 +25,3 @@ It will start all of the required backend services
 and within the container simply run `npm run dev`.
 After that the app should be available at <http://localhost:8080/>.
 
-
-Test commit 3
