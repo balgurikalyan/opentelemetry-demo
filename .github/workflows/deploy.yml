@@ -56,7 +56,6 @@ jobs:
             --namespace otel-helm --create-namespace \
             --set default.image.repository=${{ secrets.DOCKER_USERNAME }}/otel-demo \
             --set default.image.tag=latest \
-            --set-string forceRedeploy=$(date +%s)
           status=$?
           if [ $status -ne 0 ]; then
             echo "Helm upgrade failed. Rolling back..."
@@ -64,3 +63,6 @@ jobs:
             exit 1
           fi
           set -e
+
+          # Force rollout of all deployments in the namespace
+          kubectl rollout restart deployment -n otel-helm
