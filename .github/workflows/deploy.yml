@@ -51,12 +51,12 @@ jobs:
             quote
             recommendation
             shipping
-            "
+          "
           for component in $COMPONENTS; do
             docker tag ${{ secrets.DOCKER_USERNAME }}/otel-demo:latest ${{ secrets.DOCKER_USERNAME }}/otel-demo:latest-$component
             docker push ${{ secrets.DOCKER_USERNAME }}/otel-demo:latest-$component
           done
-      
+
       - name: Run Basic Startup Test
         run: |
           echo "Running Basic Startup Test..."
