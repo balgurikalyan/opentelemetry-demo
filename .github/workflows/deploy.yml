@@ -34,20 +34,24 @@ jobs:
       - name: Tag and Push Component Images
         run: |
           COMPONENTS="
-            frontend
-            accountingservice
-            adservice
-            cartservice
-            checkoutservice
-            currencyservice
-            emailservice
-            frauddetectionservice
-            paymentservice
-            productcatalogservice
-            recommendationservice
-            shippingservice
+            accounting
+            ad
+            cart
+            checkout
+            currency
+            email
+            flagd
+            fraud-detection
+            frontend-proxy
+            image-provider
+            kafka
+            load-generator
+            payment
+            product-catalog
             quote
-          "
+            recommendation
+            shipping
+            "
           for component in $COMPONENTS; do
             docker tag ${{ secrets.DOCKER_USERNAME }}/otel-demo:latest ${{ secrets.DOCKER_USERNAME }}/otel-demo:latest-$component
             docker push ${{ secrets.DOCKER_USERNAME }}/otel-demo:latest-$component
