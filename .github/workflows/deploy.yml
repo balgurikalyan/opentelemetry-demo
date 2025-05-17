@@ -59,7 +59,7 @@ jobs:
           version: 'latest'
 
       - name: Update Kubeconfig for EKS
-        run: aws eks update-kubeconfig --region ${{ secrets.AWS_REGION }} --name otel-demo-cluster
+        run: aws eks update-kubeconfig --region ${{ secrets.AWS_REGION }} --name otel-demo-test-cluster
 
       - name: Add Helm Repo and Update
         run: |
