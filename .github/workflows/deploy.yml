@@ -56,7 +56,8 @@ jobs:
             docker tag ${{ secrets.DOCKER_USERNAME }}/otel-demo:latest ${{ secrets.DOCKER_USERNAME }}/otel-demo:latest-$component
             docker push ${{ secrets.DOCKER_USERNAME }}/otel-demo:latest-$component
           done
-            - name: Run Basic Startup Test
+      
+      - name: Run Basic Startup Test
         run: |
           echo "Running Basic Startup Test..."
           docker run --rm --entrypoint /bin/sh ${{ secrets.DOCKER_USERNAME }}/otel-demo:latest -c "echo Health Check Passed"
@@ -69,7 +70,7 @@ jobs:
           echo "Testing application endpoint..."
           curl -f http://localhost:8080/ || (docker logs otel-test && docker stop otel-test && exit 1)
           docker stop otel-test
-          
+
       - name: Setup kubectl
         uses: azure/setup-kubectl@v3
         with:
