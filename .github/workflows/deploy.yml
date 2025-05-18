@@ -1,4 +1,3 @@
-# Copyright The OpenTelemetry Authors
 # SPDX-License-Identifier: Apache-2.0
 
 name: OpenTelemetry CI/CD Pipeline
@@ -9,19 +8,13 @@ on:
       - main
 
 jobs:
-  build-test-deploy:
-    runs-on: ubuntu-latest
 
+  build:
+    name: Build Docker Images
+    runs-on: ubuntu-latest
     steps:
       - name: Checkout Repository
         uses: actions/checkout@v3
-
-      - name: Configure AWS Credentials
-        uses: aws-actions/configure-aws-credentials@v2
-        with:
-          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
-          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-          aws-region: ${{ secrets.AWS_REGION }}
 
       - name: DockerHub Login
         run: echo "${{ secrets.DOCKER_PASSWORD }}" | docker login -u "${{ secrets.DOCKER_USERNAME }}" --password-stdin
@@ -57,19 +50,39 @@ jobs:
             docker push ${{ secrets.DOCKER_USERNAME }}/otel-demo:latest-$component
           done
 
+  test:
+    name: Run Tests
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+      - name: DockerHub Login
+        run: echo "${{ secrets.DOCKER_PASSWORD }}" | docker login -u "${{ secrets.DOCKER_USERNAME }}" --password-stdin
+
       - name: Run Basic Startup Test
         run: |
-          echo "Running Basic Startup Test..."
           docker run --rm --entrypoint /bin/sh ${{ secrets.DOCKER_USERNAME }}/otel-demo:latest -c "echo Health Check Passed"
 
       - name: Run Application Functionality Test
         run: |
-          echo "Starting container for functional test..."
           docker run -d -p 8080:8080 --name otel-test ${{ secrets.DOCKER_USERNAME }}/otel-demo:latest
           sleep 10
-          echo "Testing application endpoint..."
           curl -f http://localhost:8080/ || (docker logs otel-test && docker stop otel-test && exit 1)
           docker stop otel-test
+
+  deploy:
+    name: Deploy to EKS
+    needs: test
+    runs-on: ubuntu-latest
+    continue-on-error: true
+    outputs:
+      deploy_status: ${{ steps.deployment.outcome }}
+    steps:
+      - name: Configure AWS Credentials
+        uses: aws-actions/configure-aws-credentials@v2
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ secrets.AWS_REGION }}
 
       - name: Setup kubectl
         uses: azure/setup-kubectl@v3
@@ -84,17 +97,34 @@ jobs:
           helm repo add open-telemetry https://open-telemetry.github.io/opentelemetry-helm-charts
           helm repo update
 
-      - name: Deploy Using Helm with Rollback on Failure
+      - name: Deploy Using Helm
+        id: deployment
         run: |
-          set +e
           helm upgrade --install otel-demo open-telemetry/opentelemetry-demo \
             --namespace otel-helm --create-namespace \
             --set default.image.repository=${{ secrets.DOCKER_USERNAME }}/otel-demo \
             --set default.image.tag=latest
-          status=$?
-          if [ $status -ne 0 ]; then
-            echo "Helm upgrade failed. Rolling back..."
-            helm rollback otel-demo -n otel-helm
-            exit 1
-          fi
-          set -e
+
+  rollback:
+    name: Rollback if Deployment Fails
+    needs: deploy
+    runs-on: ubuntu-latest
+    if: needs.deploy.outputs.deploy_status == 'failure'
+    steps:
+      - name: Configure AWS Credentials
+        uses: aws-actions/configure-aws-credentials@v2
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ secrets.AWS_REGION }}
+
+      - name: Setup kubectl
+        uses: azure/setup-kubectl@v3
+        with:
+          version: 'latest'
+
+      - name: Update Kubeconfig for EKS
+        run: aws eks update-kubeconfig --region ${{ secrets.AWS_REGION }} --name otel-demo-test-cluster
+
+      - name: Perform Rollback
+        run: helm rollback otel-demo -n otel-helm
