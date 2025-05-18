@@ -105,7 +105,6 @@ jobs:
             --namespace otel-helm --create-namespace \
             --set default.image.repository=${{ secrets.DOCKER_USERNAME }}/otel-demo \
             --set default.image.tag=latest
-            --set frontend.replicaCount=-1
 
   rollback:
     name: Rollback if Deployment Fails
